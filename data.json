@@ -1,0 +1,151 @@
+{
+  "meta": {
+    "title": "Sample Catalog",
+    "updated": "2025-09-05"
+  },
+  "categories": [
+    {
+      "id": "getting-started",
+      "name": "Getting Started",
+      "items": [
+        {
+          "id": "g1",
+          "title": "Welcome note",
+          "type": "text",
+          "summary": "Short welcome text",
+          "created": "2025-09-01",
+          "tags": [
+            "intro"
+          ],
+          "payload": {
+            "text": "Welcome to your content catalog. Use the left panel to filter categories and the search to find items quickly."
+          }
+        },
+        {
+          "id": "g2",
+          "title": "Quick links",
+          "type": "links",
+          "created": "2025-09-02",
+          "tags": [
+            "links",
+            "resources"
+          ],
+          "payload": {
+            "links": [
+              {
+                "title": "OCI Getting Started",
+                "url": "https://docs.oracle.com/en/cloud/"
+              },
+              {
+                "title": "Bootstrap docs",
+                "url": "https://getbootstrap.com/docs/5.3/"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "tables",
+      "name": "Tables & Data",
+      "items": [
+        {
+          "id": "t1",
+          "title": "Sample inventory",
+          "type": "table",
+          "created": "2025-08-30",
+          "tags": [
+            "inventory",
+            "csv"
+          ],
+          "payload": {
+            "columns": [
+              "Item",
+              "Qty",
+              "Price"
+            ],
+            "rows": [
+              [
+                "Widget A",
+                12,
+                9.5
+              ],
+              [
+                "Gadget B",
+                5,
+                19.99
+              ],
+              [
+                "Thingamajig",
+                100,
+                1.25
+              ]
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "notes",
+      "name": "Notes & Tips",
+      "items": [
+        {
+          "id": "n1",
+          "title": "Deployment tips",
+          "type": "notes",
+          "created": "2025-08-28",
+          "tags": [
+            "deploy",
+            "oci"
+          ],
+          "payload": {
+            "lines": [
+              "Set proper CORS on the bucket.",
+              "Use object lifecycle rules for old versions.",
+              "Serve as a static website from the bucket."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "dev",
+      "name": "Developer",
+      "items": [
+        {
+          "id": "c1",
+          "title": "Sample script",
+          "type": "code",
+          "created": "2025-09-03",
+          "tags": [
+            "bash",
+            "script"
+          ],
+          "payload": {
+            "language": "bash",
+            "code": "#!/bin/bash\necho \"Hello from catalog\""
+          }
+        }
+      ]
+    },
+    {
+      "id": "media",
+      "name": "Media",
+      "items": [
+        {
+          "id": "img1",
+          "title": "Architecture diagram",
+          "type": "image",
+          "created": "2025-09-04",
+          "tags": [
+            "diagram"
+          ],
+          "payload": {
+            "src": "https://images.ctfassets.net/nnkxuzam4k38/39sOStld2OCyNn3HmCpqco/21d339122a7cb417c83e6ebdc347ea5c/sea-edge-79ab30e2.png",
+            "alt": "Architecture diagram"
+          }
+        }
+      ]
+    }
+  ]
+}
