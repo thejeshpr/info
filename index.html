@@ -1,0 +1,285 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Content Catalog — Product-ready Viewer</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    body { background: #f5f7fb; }
+    .sidebar { min-height: 100vh; border-right: 1px solid rgba(0,0,0,.05); }
+    .category-item { cursor: pointer; }
+    .category-item.active { background: rgba(0,0,0,.03); }
+    .card-note { background: linear-gradient(90deg,#fffef9,#ffffff); }
+    pre.code-block { background:#0d1117; color:#c9d1d9; padding:1rem; border-radius:.5rem; overflow:auto; }
+    .meta { font-size:.85rem; color:#6c757d; }
+    .category-item-active {color: green; }
+  </style>
+</head>
+<body>
+<div class="container-fluid">
+  <div class="row">
+    <nav class="col-md-3 col-lg-3 p-3 sidebar bg-white">
+      <div class="d-flex align-items-center mb-3">
+        <i class="bi bi-grid-fill fs-3 me-2 text-primary"></i>
+        <div>
+          <h5 class="mb-0">Content Catalog</h5>
+          <small class="text-muted">Category-driven JSON viewer</small>
+        </div>
+      </div><div class="mb-3">
+    <input id="searchInput" class="form-control form-control-sm" placeholder="Search title / text...">
+  </div>
+
+  <div class="mb-2 d-flex justify-content-between align-items-center">
+    <small class="text-muted">Categories</small>
+    <button id="btnRefresh" class="btn btn-sm btn-outline-secondary">Refresh</button>
+  </div>
+
+  <ul id="categoriesList" class="list-group">
+    <!-- categories injected here -->
+  </ul>
+
+  <div class="mt-4">
+    <small class="text-muted">Data source</small>
+    <div class="d-flex gap-2 mt-2">
+      <button id="btnLoadRemote" class="btn btn-sm btn-primary">Load data.json</button>
+      <button id="btnDownload" class="btn btn-sm btn-outline-primary">Download JSON</button>
+    </div>
+  </div>
+
+  <footer class="mt-4 small text-muted">
+    Built with Bootstrap 5 • Ready to host on OCI
+  </footer>
+</nav>
+
+<main class="col-md-9 col-lg-9 p-4">
+  <div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+      <h3 id="pageTitle">All Content</h3>
+      <div id="counts" class="meta mt-1">Categories: 0 • Items: 0</div>
+    </div>
+    <!-- <div>
+      <div class="btn-group" role="group">
+        <button id="btnExpandAll" class="btn btn-sm btn-outline-secondary">Expand all</button>
+        <button id="btnCollapseAll" class="btn btn-sm btn-outline-secondary">Collapse all</button>
+      </div>
+    </div> -->
+  </div>
+
+  <div id="contentArea" class="row g-3">
+    <!-- cards will be injected here -->
+  </div>
+
+</main>
+
+  </div>
+</div>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+<script>
+/* jQuery version of the Catalog Viewer script that ONLY fetches JSON from a URL.
+   Ensure jQuery is included on the page before this script. */
+
+const DATA_URL = 'https://raw.githubusercontent.com/thejeshpr/info/refs/heads/main/data.json'; // <<-- replace this
+
+let data = { meta:{}, categories:[] }; // start empty
+
+function log(...args){ console.log('[CatalogViewer]', ...args); }
+function err(...args){ console.error('[CatalogViewer]', ...args); }
+
+function escapeHtml(s){
+  return (s||'').toString()
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;');
+}
+function escapeAttr(s){
+  return (s||'').toString().replace(/\"/g,'&quot;');
+}
+
+function renderCategories(){
+  try {
+    const $ul = $('#categoriesList');
+    if(!$ul.length){ err('Missing #categoriesList element'); return; }
+    $ul.empty();
+    $.each(data.categories || [], function(_, cat){
+      const $li = $('<li>')
+        .addClass('list-group-item d-flex justify-content-between align-items-center category-item')
+        .attr('data-cat', cat.id);
+
+      $li.html(
+        `<div><i class='bi bi-folder-fill me-2 text-warning'></i><strong>${escapeHtml(cat.name)}</strong>` +
+        `<div class='small text-muted'>${(cat.items||[]).length} items</div></div>` +
+        `<span class='badge rounded-pill bg-light text-muted'>${(cat.items||[]).length}</span>`
+      );
+
+      $li.on('click', function(){ selectCategory(cat.id); });
+      $ul.append($li);
+    });
+    log('Rendered', (data.categories || []).length, 'categories');
+  } catch(e){ err('renderCategories error', e); }
+}
+
+function selectCategory(catId){
+  try {
+    $('.category-item').removeClass('active');
+    $('.category-item').removeClass('category-item-active');
+
+    if(catId){
+      const $sel = $(`[data-cat='${catId}']`);
+      if ($sel.length) $sel.addClass('category-item-active');
+    }
+    const cat = (data.categories || []).find(c => c.id === catId);
+    $('#pageTitle').text(cat ? cat.name : 'All Content');
+    const itemsToShow = cat ? (cat.items || []) : (data.categories || []).flatMap(c => c.items || []);
+    renderItems(itemsToShow);
+  } catch(e){ err('selectCategory error', e); }
+}
+
+function renderItems(items){
+  try {
+    const $area = $('#contentArea');
+    $area.empty();
+    $('#counts').text(`Categories: ${(data.categories||[]).length} • Items: ${items.length}`);
+    if (!items || items.length === 0) {
+      $area.append(`<div class='col-12'><div class='alert alert-info'>No items to show.</div></div>`);
+      return;
+    }
+
+    $.each(items, function(_, it){
+      const $col = $('<div>').addClass('col-12').attr('data-id', it.id);
+      const $card = $('<div>').addClass('card shadow-sm');
+      const $body = $('<div>').addClass('card-body');
+
+      const header = `<div class='d-flex justify-content-between align-items-start mb-2'>
+                        <div>
+                          <h5 class='card-title mb-0'>${escapeHtml(it.title)}</h5>
+                          <div class='meta'>${it.tags ? (it.tags.map(t => `<span class='badge bg-light text-muted me-1'>${escapeHtml(t)}</span>`).join(' ')) : ''} <small class='text-muted'>• ${it.created || ''}</small></div>
+                        </div>
+                        <div class='text-end'>
+                          <small class='text-muted'>${escapeHtml(it.type)}</small>
+                        </div>
+                      </div>`;
+      $body.append(header);
+
+      const payload = it.payload || {};
+      let contentHtml = '';
+      if (it.type === 'text') {
+        contentHtml = `<p class='card-text'>${escapeHtml(payload.text || '')}</p>`;
+      } else if (it.type === 'links') {
+        const links = payload.links || [];
+        contentHtml = `<ul class='list-unstyled'>${links.map(l => `<li><a href='${escapeAttr(l.url)}' target='_blank' rel='noopener noreferrer'>🔗 ${escapeHtml(l.title)}</a></li>`).join('')}</ul>`;
+      } else if (it.type === 'table') {
+        const cols = payload.columns || []; const rows = payload.rows || [];
+        contentHtml = `<div class='table-responsive'><table class='table table-sm table-striped'><thead><tr>${cols.map(c => `<th>${escapeHtml(c)}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${r.map(c => `<td>${escapeHtml(String(c))}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+      } else if (it.type === 'notes') {
+        const lines = payload.lines || [];
+        contentHtml = `<div class='card-note p-3 rounded'>${lines.map(l => `<p class='mb-1'>• ${escapeHtml(l)}</p>`).join('')}</div>`;
+      } else if (it.type === 'code') {
+        contentHtml = `<pre class='code-block'><code>${escapeHtml(payload.code || '')}</code></pre>`;
+      } else if (it.type === 'image') {
+        contentHtml = `<div class='ratio ratio-16x9'><img src='${escapeAttr(payload.src || "https://via.placeholder.com/800x300")}' alt='${escapeAttr(payload.alt || 'image')}' class='img-fluid rounded'/></div>`;
+      } else {
+        contentHtml = `<pre>${escapeHtml(JSON.stringify(payload, null, 2))}</pre>`;
+      }
+
+      $body.append($('<div>').html(contentHtml));
+
+      const $ft = $('<div>').addClass('mt-3 d-flex justify-content-between align-items-center');
+      const $left = $('<div>').html(`<small class='text-muted'>ID: ${escapeHtml(it.id)}</small>`);
+      const $right = $('<div>');
+      const $btn = $('<button>')
+        .addClass('btn btn-sm btn-outline-secondary')
+        .text('Copy Link')
+        .on('click', function(e){
+          e.stopPropagation();
+          copyLink(it.id);
+        });
+
+      $right.append($btn);
+      $ft.append($left).append($right);
+      $body.append($ft);
+
+      $card.append($body);
+      $col.append($card);
+      $area.append($col);
+    });
+
+    log('Rendered', items.length, 'items');
+  } catch(e){ err('renderItems error', e); }
+}
+
+function copyLink(id){
+  try{
+    const url = new URL(window.location.href);
+    url.hash = id;
+    const txt = url.toString();
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt).then(() => alert('Link copied to clipboard')).catch(() => alert('Copy failed — manually copy the URL.'));
+    } else {
+      const $ta = $('<textarea>').css({position:'fixed',left:'-9999px'}).val(txt).appendTo('body').select();
+      try {
+        document.execCommand('copy');
+        alert('Link copied to clipboard');
+      } catch(e) {
+        alert('Copy failed — manually copy the URL.');
+      } finally {
+        $ta.remove();
+      }
+    }
+  } catch(e){ err('copyLink error', e); }
+}
+
+function tryLoadRemote(){
+  log('Fetching JSON from:', DATA_URL);
+  return $.ajax({
+    url: DATA_URL,
+    dataType: 'json',
+    cache: false,
+    method: 'GET',
+    timeout: 15000
+  })
+  .done(function(j){
+    if (j && Array.isArray(j.categories) && j.categories.length > 0) {
+      data = j;
+      log('Loaded remote JSON successfully');
+      renderCategories();
+      selectCategory(null);
+    } else {
+      log('Remote JSON loaded but did not contain categories.');
+    }
+  })
+  .fail(function(xhr, status, errMsg){
+    log('Failed to fetch/parse remote JSON.', errMsg || status);
+  });
+}
+
+/* Initialization */
+$(function(){
+  try {
+    log('Initializing viewer…');
+    tryLoadRemote();
+
+    const $btnLoad = $('#btnLoadRemote');
+    if ($btnLoad.length) $btnLoad.on('click', tryLoadRemote);
+
+    const $btnDownload = $('#btnDownload');
+    if ($btnDownload.length) {
+      $btnDownload.on('click', function(){
+        try {
+          const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = 'catalog.json';
+          a.click();
+          URL.revokeObjectURL(a.href);
+        } catch(e){ err('btnDownload error', e); }
+      });
+    }
+  } catch(e){ err('Initialization error', e); }
+});
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
