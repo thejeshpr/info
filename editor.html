@@ -19,25 +19,28 @@
     .header-row { align-items:center; gap:12px; margin-bottom:10px; }
     .url-input { width:100%; max-width:720px; }
 
-    /* Categories row: single row full width */
-    .cats-row { margin-bottom:14px; }
-    .cats-card { display:flex; flex-direction:row; align-items:center; gap:12px; padding:12px; }
-    #categories-list { max-height:160px; overflow:auto; width:100%; }
+    /* FIRST ROW: Categories (left) and Items (right) side-by-side */
+    .first-row { display:flex; gap:16px; margin-bottom:14px; }
+    .cats-col { width: 28%; display:flex; flex-direction:column; }
+    .items-col { width: 72%; display:flex; flex-direction:column; }
+    #categories-list { overflow:auto; max-height:220px; }
+    #items-list { overflow:auto; flex:1; }
 
-    /* Main area: editor (left) and json viewer (right) side-by-side */
-    .main-row { display:flex; gap:16px; height: calc(100vh - 240px); } /* header+cats+footer ~240px */
+    .item-row { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:10px; border-radius:8px; background:#fff; margin-bottom:8px; border:1px solid rgba(0,0,0,0.04); }
+    .item-left { display:flex; gap:10px; align-items:flex-start; flex:1; }
+    .item-title { font-weight:600; }
+    .item-meta { font-size:.85rem; color:#6c757d; margin-top:2px; }
+    .item-tags { display:flex; gap:6px; align-items:center; }
+
+    /* SECOND ROW: Editor and JSON viewer side-by-side */
+    .second-row { display:flex; gap:16px; height: calc(60vh - 60px); } /* gives space for editor & tree */
     .editor-col { width: 66%; display:flex; flex-direction:column; }
     .json-col { width: 34%; display:flex; flex-direction:column; }
 
     .editor-card, .json-card { height:100%; display:flex; flex-direction:column; }
-    .editor-inner { display:flex; gap:12px; flex:1; overflow:hidden; }
-    .items-list-wrap { width:38%; display:flex; flex-direction:column; overflow:hidden; }
-    #items-list { overflow:auto; flex:1; }
-    .form-wrap { width:62%; display:flex; flex-direction:column; }
-    .form-fields { padding:12px; overflow:auto; flex:1; background:#fff; }
+    .form-fields { padding:12px; overflow:auto; background:#fff; flex:1; }
     .form-actions { border-top:1px solid rgba(0,0,0,0.04); padding:10px; display:flex; justify-content:flex-end; background:#fff; }
 
-    /* JSON viewer */
     .json-body { padding:12px; overflow:auto; background:#fff; flex:1; border-radius:8px; }
     .json-tree{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", monospace; font-size:0.9rem; }
     .json-node{ margin-left:10px; }
@@ -46,20 +49,11 @@
     .json-key{ color:#2b6cb0; } .json-string{ color:#2f855a; } .json-number{ color:#d53f8c; }
     .json-boolean{ color:#b67900; } .json-null{ color:#6c757d; } .json-bracket{ color:#333; }
 
-    /* Active item contrast */
+    /* active category/item contrast */
     .list-group-item.active{ background: #0d6efd !important; color:#fff !important; border-color: rgba(13,110,253,0.9); }
     .list-group-item.active .muted-small{ color: rgba(255,255,255,0.9) !important; }
-    .list-group-item .badge.tag-badge{ background: rgba(255,255,255,0.12); color:#fff; border:1px solid rgba(255,255,255,0.12); }
 
-    /* responsive */
-    @media (max-width: 991.98px){ .url-input { max-width:520px; } }
-    @media (max-width: 767.98px){
-      .main-row{ flex-direction:column; height:auto; }
-      .editor-col, .json-col{ width:100%; }
-      #categories-list{ max-height:200px; }
-    }
-
-    .list-group-item{ cursor:pointer; }
+    @media (max-width: 991.98px){ .url-input { max-width:520px; } .first-row { flex-direction:column; } .second-row { flex-direction:column; height:auto; } .cats-col,.items-col,.editor-col,.json-col{ width:100%; } }
     .btn-sm{ padding:.35rem .6rem; }
   </style>
 </head>
@@ -89,106 +83,97 @@
       </div>
     </div>
 
-    <!-- categories: full-width single row -->
-    <div class="row cats-row">
-      <div class="col-12">
-        <div class="card cats-card">
-          <div style="min-width:220px">
-            <h6 class="mb-0">Categories</h6>
+    <!-- FIRST ROW: categories (left) and items (right) -->
+    <div class="first-row">
+      <div class="cats-col">
+        <div class="card">
+          <div class="card-body p-3 d-flex flex-column">
+            <div class="d-flex align-items-center mb-2">
+              <h6 class="mb-0">Categories</h6>
+              <button id="add-category" class="btn btn-sm btn-outline-primary ms-auto" title="Add category"><i class="fa-solid fa-plus"></i></button>
+            </div>
+            <div id="categories-list" class="list-group flex-grow-1"></div>
           </div>
-          <div class="flex-grow-1" id="categories-list-container">
-            <div id="categories-list" class="list-group"></div>
-          </div>
-          <div class="ms-2">
-            <button id="add-category" class="btn btn-sm btn-outline-primary" title="Add category"><i class="fa-solid fa-plus"></i></button>
+        </div>
+      </div>
+
+      <div class="items-col">
+        <div class="card" style="height:100%;">
+          <div class="card-body p-3 d-flex flex-column">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <h6 id="items-title" class="mb-0">Items</h6>
+              <div class="muted-small" id="items-meta">Select a category to view items</div>
+            </div>
+
+            <div id="items-list" class="flex-grow-1 overflow-auto"></div>
+            <div class="mt-2 text-end muted-small">Each item has a delete button at the right.</div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- main row: editor (left) and json viewer (right) side-by-side -->
-    <div class="row main-row">
-      <div class="col editor-col">
+    <!-- SECOND ROW: editor (left) and JSON viewer (right) -->
+    <div class="second-row">
+      <div class="editor-col">
         <div class="card editor-card">
           <div class="card-body p-3 d-flex flex-column">
-            <div class="d-flex align-items-center justify-content-between mb-2">
-              <div>
-                <h6 id="selected-cat-name" class="mb-0">Select a category</h6>
-                <div id="selected-cat-meta" class="muted-small"></div>
-              </div>
-              <div>
-                <button id="add-item" class="btn btn-sm btn-outline-primary" disabled><i class="fa-solid fa-file-circle-plus"></i>&nbsp;Add</button>
-                <button id="delete-cat" class="btn btn-sm btn-outline-danger ms-2" disabled title="Delete category"><i class="fa-solid fa-trash"></i></button>
-              </div>
-            </div>
+            <h6 class="mb-2">Editor</h6>
+            <div class="form-fields">
+              <!-- Editor shows only the selected item details (no items list here) -->
+              <form id="item-form">
+                <input type="hidden" id="form-cat-id" />
+                <input type="hidden" id="form-item-id" />
 
-            <div class="editor-inner">
-              <div class="items-list-wrap card" style="padding:12px; overflow:hidden;">
-                <div class="mb-2"><small class="muted-small">Items</small></div>
-                <div id="items-list" class="list-group flex-grow-1" style="overflow:auto;"></div>
-              </div>
-
-              <div class="form-wrap card" style="padding:0; overflow:hidden;">
-                <div class="form-card" style="height:100%;">
-                  <div class="form-fields">
-                    <form id="item-form">
-                      <input type="hidden" id="form-cat-id" />
-                      <input type="hidden" id="form-item-id" />
-
-                      <div class="mb-2">
-                        <label class="form-label small">Title</label>
-                        <input id="form-title" class="form-control form-control-sm" />
-                      </div>
-
-                      <div class="mb-2">
-                        <label class="form-label small">ID</label>
-                        <input id="form-id" class="form-control form-control-sm" />
-                      </div>
-
-                      <div class="mb-2">
-                        <label class="form-label small">Type</label>
-                        <select id="form-type" class="form-select form-select-sm">
-                          <option value="text">text</option>
-                          <option value="links">links</option>
-                          <option value="table">table</option>
-                          <option value="notes">notes</option>
-                          <option value="code">code</option>
-                          <option value="image">image</option>
-                          <option value="other">other</option>
-                        </select>
-                      </div>
-
-                      <div class="mb-2">
-                        <label class="form-label small">Created</label>
-                        <input id="form-created" type="date" class="form-control form-control-sm" />
-                      </div>
-
-                      <div class="mb-2">
-                        <label class="form-label small">Tags (comma-separated)</label>
-                        <input id="form-tags" class="form-control form-control-sm" />
-                      </div>
-
-                      <div id="payload-area" class="mb-2">
-                        <label class="form-label small">Payload (JSON)</label>
-                        <textarea id="form-payload-json" class="form-control form-control-sm" rows="6"></textarea>
-                        <div class="form-text muted-small">Edit payload as JSON here.</div>
-                      </div>
-                    </form>
-                  </div>
-
-                  <div class="form-actions">
-                    <button type="button" id="save-item" class="btn btn-primary btn-sm">Save</button>
-                    <button type="button" id="delete-item" class="btn btn-danger btn-sm ms-2">Delete</button>
-                  </div>
+                <div class="mb-2">
+                  <label class="form-label small">Title</label>
+                  <input id="form-title" class="form-control form-control-sm" />
                 </div>
-              </div>
+
+                <div class="mb-2">
+                  <label class="form-label small">ID</label>
+                  <input id="form-id" class="form-control form-control-sm" />
+                </div>
+
+                <div class="mb-2">
+                  <label class="form-label small">Type</label>
+                  <select id="form-type" class="form-select form-select-sm">
+                    <option value="text">text</option>
+                    <option value="links">links</option>
+                    <option value="table">table</option>
+                    <option value="notes">notes</option>
+                    <option value="code">code</option>
+                    <option value="image">image</option>
+                    <option value="other">other</option>
+                  </select>
+                </div>
+
+                <div class="mb-2">
+                  <label class="form-label small">Created</label>
+                  <input id="form-created" type="date" class="form-control form-control-sm" />
+                </div>
+
+                <div class="mb-2">
+                  <label class="form-label small">Tags (comma-separated)</label>
+                  <input id="form-tags" class="form-control form-control-sm" />
+                </div>
+
+                <div id="payload-area" class="mb-2">
+                  <label class="form-label small">Payload (JSON)</label>
+                  <textarea id="form-payload-json" class="form-control form-control-sm" rows="6"></textarea>
+                  <div class="form-text muted-small">Edit payload as JSON here.</div>
+                </div>
+              </form>
             </div>
 
+            <div class="form-actions">
+              <button type="button" id="save-item" class="btn btn-primary btn-sm">Save</button>
+              <button type="button" id="delete-item" class="btn btn-danger btn-sm ms-2">Delete</button>
+            </div>
           </div>
         </div>
       </div>
 
-      <div class="col json-col">
+      <div class="json-col">
         <div class="card json-card">
           <div class="card-body d-flex flex-column p-3">
             <div class="d-flex align-items-center justify-content-between mb-2">
@@ -235,6 +220,7 @@
       }
     }
 
+    // Render categories list (left of first row)
     function renderCategories(){
       const $list = $('#categories-list').empty();
       (catalog.categories||[]).forEach(cat=>{
@@ -253,38 +239,60 @@
 
     function renderItemsListEmpty(){
       $('#items-list').empty();
-      $('#form-title').val(''); $('#form-id').val(''); $('#form-type').val('text'); $('#form-created').val('');
-      $('#form-tags').val(''); $('#form-payload-json').val('{}'); $('#delete-item').prop('disabled', true);
-      $('#selected-cat-name').text('Select a category'); $('#selected-cat-meta').text('');
+      $('#items-title').text('Items');
+      $('#items-meta').text('Select a category to view items');
+      clearForm();
     }
 
+    // When a category is clicked, show items on the right (first row)
     function selectCategory(catId){
       selectedCategoryId = catId;
       const cat = (catalog.categories||[]).find(c=>c.id===catId);
       if(!cat) return;
-      $('#selected-cat-name').text(cat.name);
-      $('#selected-cat-meta').text('id: '+cat.id+' — '+(cat.items?cat.items.length:0)+' items');
-      $('#add-item').prop('disabled', false);
-      $('#delete-cat').prop('disabled', false).off('click').on('click', ()=>{ if(confirm('Delete category '+cat.name+'?')) deleteCategory(cat.id); });
-      renderCategories(); renderItems(cat); clearForm();
+      $('#categories-list .list-group-item').removeClass('active');
+      $(`#categories-list .list-group-item[data-id='${catId}']`).addClass('active');
+
+      $('#items-title').text(cat.name);
+      $('#items-meta').text('id: '+cat.id+' — '+(cat.items?cat.items.length:0)+' items');
+      $('#add-item').prop('disabled', false).off('click').on('click', ()=> addItem());
+      $('#delete-cat').prop('disabled', false).off('click').on('click', ()=> { if(confirm('Delete category '+cat.name+'?')) deleteCategory(cat.id); });
+      renderItems(cat);
+      clearForm();
     }
 
+    // Render items (first row right)
     function renderItems(cat){
-      const $list = $('#items-list').empty();
+      const $wrap = $('#items-list').empty();
       (cat.items||[]).forEach(it=>{
-        const $it = $(`
-          <button type="button" class="list-group-item list-group-item-action d-flex align-items-start" data-id="${it.id}">
-            <div style="flex:1">
-              <div><strong>${escapeHtml(it.title)}</strong></div>
-              <div class="muted-small">${escapeHtml(it.id)} • ${escapeHtml(it.type||'')} • ${escapeHtml(it.created||'')}</div>
+        const $row = $(`
+          <div class="item-row" data-id="${it.id}">
+            <div class="item-left">
+              <div>
+                <div class="item-title">${escapeHtml(it.title)}</div>
+                <div class="item-meta">${escapeHtml(it.id)} • ${escapeHtml(it.type||'')} • ${escapeHtml(it.created||'')}</div>
+              </div>
+              <div class="item-tags ms-3">
+                ${(it.tags||[]).map(t=>`<span class="badge bg-light text-dark tag-badge">${escapeHtml(t)}</span>`).join('')}
+              </div>
             </div>
-            <div>${(it.tags||[]).map(t=>`<span class="badge bg-light text-dark tag-badge">${escapeHtml(t)}</span>`).join('')}</div>
-          </button>`);
-        $it.on('click', ()=> selectItem(cat.id, it.id));
-        $list.append($it);
+            <div style="display:flex; gap:8px; align-items:center;">
+              <button class="btn btn-sm btn-outline-primary btn-select-item" title="Edit item"><i class="fa-solid fa-pen"></i></button>
+              <button class="btn btn-sm btn-outline-danger btn-delete-item" title="Delete item"><i class="fa-solid fa-trash"></i></button>
+            </div>
+          </div>
+        `);
+        // select button -> load into editor (2nd row)
+        $row.find('.btn-select-item').on('click', ()=> selectItem(cat.id, it.id));
+        // delete button
+        $row.find('.btn-delete-item').on('click', ()=> {
+          if(!confirm('Delete item \"'+it.title+'\"?')) return;
+          deleteItem(cat.id, it.id);
+        });
+        $wrap.append($row);
       });
     }
 
+    // When an item is clicked (select for editing) we fill the editor on 2nd row
     function selectItem(catId, itemId){
       selectedItemId = itemId;
       const cat = (catalog.categories||[]).find(c=>c.id===catId);
@@ -298,9 +306,15 @@
       $('#form-created').val(it.created||'');
       $('#form-tags').val((it.tags||[]).join(', '));
       $('#form-payload-json').val(JSON.stringify(it.payload||{}, null, 2));
-      $('#delete-item').prop('disabled', false).off('click').on('click', ()=> { if(confirm('Delete item '+it.title+'?')) deleteItem(catId, itemId);});
-      $('#items-list .list-group-item').removeClass('active');
-      $(`#items-list .list-group-item[data-id='${itemId}']`).addClass('active');
+      $('#delete-item').prop('disabled', false).off('click').on('click', ()=> {
+        if(confirm('Delete item '+it.title+'?')) deleteItem(catId, itemId);
+      });
+      // highlight selected item row visually in the items list
+      $('#items-list .item-row').removeClass('active');
+      $(`#items-list .item-row[data-id='${itemId}']`).addClass('active').css('outline','2px solid rgba(13,110,253,0.15)');
+      // also highlight category
+      $('#categories-list .list-group-item').removeClass('active');
+      $(`#categories-list .list-group-item[data-id='${catId}']`).addClass('active');
     }
 
     function clearForm(){
@@ -309,9 +323,10 @@
       $('#form-title').val(''); $('#form-id').val(''); $('#form-type').val('text');
       $('#form-created').val(''); $('#form-tags').val(''); $('#form-payload-json').val('{}');
       $('#delete-item').prop('disabled', true);
-      $('#items-list .list-group-item').removeClass('active');
+      $('#items-list .item-row').removeClass('active').css('outline','none');
     }
 
+    // Category add/delete
     function addCategory(){
       const name = prompt('Category name'); if(!name) return;
       const id = slugify(name);
@@ -323,16 +338,15 @@
 
     function deleteCategory(catId){
       catalog.categories = (catalog.categories||[]).filter(c=>c.id!==catId);
-      selectedCategoryId = null; renderCategories();
-      $('#selected-cat-name').text('Select a category'); $('#selected-cat-meta').text('');
-      $('#add-item').prop('disabled', true); $('#delete-cat').prop('disabled', true);
-      $('#items-list').empty(); clearForm(); renderTree();
+      selectedCategoryId = null; renderCategories(); renderItemsListEmpty(); renderTree();
     }
 
+    // items: add/delete/save
     function addItem(){
-      const cat = (catalog.categories||[]).find(c=>c.id===selectedCategoryId); if(!cat) return;
+      const cat = (catalog.categories||[]).find(c=>c.id===selectedCategoryId); if(!cat) return alert('Select a category first');
       const title = prompt('Item title'); if(!title) return;
-      const id = slugify(title); if((cat.items||[]).find(i=>i.id===id)){ alert('Item id exists in this category.'); return; }
+      const id = slugify(title);
+      if((cat.items||[]).find(i=>i.id===id)){ alert('Item id exists in this category.'); return; }
       const it = { id, title, type:'text', created: new Date().toISOString().slice(0,10), tags: [], payload: {} };
       cat.items = cat.items || []; cat.items.push(it);
       renderItems(cat); selectItem(cat.id, it.id); renderCategories(); renderTree();
@@ -340,7 +354,10 @@
 
     function deleteItem(catId, itemId){
       const cat = (catalog.categories||[]).find(c=>c.id===catId); if(!cat) return;
-      cat.items = (cat.items||[]).filter(i=>i.id!==itemId); clearForm(); renderItems(cat); renderCategories(); renderTree();
+      cat.items = (cat.items||[]).filter(i=>i.id!==itemId);
+      // if deleted was selected, clear editor
+      if(selectedItemId === itemId) clearForm();
+      renderItems(cat); renderCategories(); renderTree();
     }
 
     function saveItem(){
@@ -351,7 +368,7 @@
       const type = $('#form-type').val(); const created = $('#form-created').val();
       const tags = $('#form-tags').val().split(',').map(s=>s.trim()).filter(Boolean);
       let payload = {};
-      try { payload = JSON.parse($('#form-payload-json').val() || '{}'); } catch(e){ alert('Payload JSON invalid'); return; }
+      try{ payload = JSON.parse($('#form-payload-json').val() || '{}'); }catch(e){ alert('Payload JSON invalid'); return; }
 
       if(itemIdOrig){
         const it = (cat.items||[]).find(i=>i.id===itemIdOrig); if(!it) return;
@@ -362,9 +379,11 @@
         const it = { id:itemId, title, type, created, tags, payload }; cat.items = cat.items || []; cat.items.push(it);
       }
       renderItems(cat); renderCategories(); renderTree();
+      // keep editor selection on saved item
+      selectItem(catId, itemId);
     }
 
-    // JSON tree
+    // JSON tree rendering
     function renderTree(){
       const $root = $('#json-tree').empty();
       buildJsonTree(catalog, $root);
@@ -428,14 +447,14 @@
     function downloadJSON(){ const blob = new Blob([JSON.stringify(catalog, null,2)], {type:'application/json'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'data.updated.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); }
     function slugify(s){ return (s||'').toString().toLowerCase().trim().replace(/[\s\_]+/g,'-').replace(/[^a-z0-9\-]/g,'').replace(/\-+/g,'-').replace(/^\-+|\-+$/g,''); }
 
-    // bind
+    // Bindings
     $(function(){
       $('#add-category').on('click', addCategory);
-      $('#add-item').on('click', addItem);
       $('#btn-generate').on('click', renderTree);
       $('#btn-copy').on('click', copyJSON);
       $('#btn-download').on('click', downloadJSON);
       $('#save-item').on('click', saveItem);
+      $('#delete-item').on('click', ()=> { const catId = $('#form-cat-id').val() || selectedCategoryId; const itemId = $('#form-item-id').val(); if(!catId || !itemId) return alert('No item selected'); if(confirm('Delete item?')) deleteItem(catId, itemId); });
       $('#btn-load-url').on('click', ()=>{ const v = $('#sourceUrlInput').val().trim(); if(!v) return alert('Enter a URL'); sourceUrl = v; loadCatalog(); });
       $('#btn-reset-url').on('click', ()=>{ sourceUrl = DEFAULT_SOURCE; $('#sourceUrlInput').val(DEFAULT_SOURCE); loadCatalog(); });
       $('#btn-expand-all').on('click', expandAll);
