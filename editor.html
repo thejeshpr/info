@@ -1,14 +1,11 @@
 <!doctype html>
+
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Catalog Editor — data.json</title>
-
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.0/css/all.min.css" rel="stylesheet">
-
-  <style>
+  <title>Catalog Editor — data.json</title>  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.0/css/all.min.css" rel="stylesheet">  <style>
     :root{ --card-radius:12px; --gap:12px; }
     html,body{ height:100%; margin:0; padding:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:#f6f8fa; }
     .card{ border-radius:var(--card-radius); }
@@ -33,7 +30,7 @@
     .item-tags { display:flex; gap:6px; align-items:center; }
 
     /* SECOND ROW: Editor and JSON viewer side-by-side */
-    .second-row { display:flex; gap:16px; height: calc(60vh - 60px); } /* gives space for editor & tree */
+    .second-row { display:flex; gap:16px; height: calc(60vh - 60px); }
     .editor-col { width: 66%; display:flex; flex-direction:column; }
     .json-col { width: 34%; display:flex; flex-direction:column; }
 
@@ -49,14 +46,17 @@
     .json-key{ color:#2b6cb0; } .json-string{ color:#2f855a; } .json-number{ color:#d53f8c; }
     .json-boolean{ color:#b67900; } .json-null{ color:#6c757d; } .json-bracket{ color:#333; }
 
-    /* active category/item contrast */
+    /* active styles: categories and items should both highlight blue with white text */
     .list-group-item.active{ background: #0d6efd !important; color:#fff !important; border-color: rgba(13,110,253,0.9); }
-    .list-group-item.active .muted-small{ color: rgba(255,255,255,0.9) !important; }
+    .list-group-item.active .muted-small{ color: rgba(255,255,255,0.95) !important; }
+
+    .item-row.active{ background: #0d6efd; color:#fff; border-color: rgba(13,110,253,0.9); }
+    .item-row.active .item-meta, .item-row.active .item-title{ color: #fff; }
+    .item-row.active .tag-badge{ background: rgba(255,255,255,0.15); color:#fff; border:1px solid rgba(255,255,255,0.12); }
 
     @media (max-width: 991.98px){ .url-input { max-width:520px; } .first-row { flex-direction:column; } .second-row { flex-direction:column; height:auto; } .cats-col,.items-col,.editor-col,.json-col{ width:100%; } }
     .btn-sm{ padding:.35rem .6rem; }
-  </style>
-</head>
+  </style></head>
 <body>
   <div class="container-fluid p-3">
     <!-- header -->
@@ -68,135 +68,128 @@
           <button id="btn-copy" class="btn btn-success btn-sm"><i class="fa-solid fa-copy"></i> Copy JSON</button>
           <button id="btn-download" class="btn btn-outline-success btn-sm"><i class="fa-solid fa-file-arrow-down"></i> Download</button>
         </div>
-      </div>
+      </div><div class="col-12 col-md-5 d-flex justify-content-center">
+    <div class="input-group url-input">
+      <input type="text" id="sourceUrlInput" class="form-control form-control-sm" aria-label="JSON URL" />
+      <button class="btn btn-sm btn-primary" id="btn-load-url"><i class="fa-solid fa-download"></i>&nbsp;Load</button>
+      <button class="btn btn-sm btn-outline-secondary" id="btn-reset-url">Reset</button>
+    </div>
+  </div>
 
-      <div class="col-12 col-md-5 d-flex justify-content-center">
-        <div class="input-group url-input">
-          <input type="text" id="sourceUrlInput" class="form-control form-control-sm" aria-label="JSON URL" />
-          <button class="btn btn-sm btn-primary" id="btn-load-url"><i class="fa-solid fa-download"></i>&nbsp;Load</button>
-          <button class="btn btn-sm btn-outline-secondary" id="btn-reset-url">Reset</button>
+  <div class="col-12 col-md-3 text-md-end">
+    <div class="muted-small d-none d-md-block">Always loads JSON from the given GitHub URL, edit visually, then copy/download the updated JSON.</div>
+  </div>
+</div>
+
+<!-- FIRST ROW: categories (left) and items (right) -->
+<div class="first-row">
+  <div class="cats-col">
+    <div class="card">
+      <div class="card-body p-3 d-flex flex-column">
+        <div class="d-flex align-items-center mb-2">
+          <h6 class="mb-0">Categories</h6>
+          <button id="add-category" class="btn btn-sm btn-outline-primary ms-auto" title="Add category"><i class="fa-solid fa-plus"></i></button>
         </div>
-      </div>
-
-      <div class="col-12 col-md-3 text-md-end">
-        <div class="muted-small d-none d-md-block">Always loads JSON from the given GitHub URL, edit visually, then copy/download the updated JSON.</div>
+        <div id="categories-list" class="list-group flex-grow-1"></div>
       </div>
     </div>
+  </div>
 
-    <!-- FIRST ROW: categories (left) and items (right) -->
-    <div class="first-row">
-      <div class="cats-col">
-        <div class="card">
-          <div class="card-body p-3 d-flex flex-column">
-            <div class="d-flex align-items-center mb-2">
-              <h6 class="mb-0">Categories</h6>
-              <button id="add-category" class="btn btn-sm btn-outline-primary ms-auto" title="Add category"><i class="fa-solid fa-plus"></i></button>
-            </div>
-            <div id="categories-list" class="list-group flex-grow-1"></div>
-          </div>
+  <div class="items-col">
+    <div class="card" style="height:100%;">
+      <div class="card-body p-3 d-flex flex-column">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <h6 id="items-title" class="mb-0">Items</h6>
+          <div class="muted-small" id="items-meta">Select a category to view items</div>
         </div>
-      </div>
 
-      <div class="items-col">
-        <div class="card" style="height:100%;">
-          <div class="card-body p-3 d-flex flex-column">
-            <div class="d-flex align-items-center justify-content-between mb-2">
-              <h6 id="items-title" class="mb-0">Items</h6>
-              <div class="muted-small" id="items-meta">Select a category to view items</div>
-            </div>
-
-            <div id="items-list" class="flex-grow-1 overflow-auto"></div>
-            <div class="mt-2 text-end muted-small">Each item has a delete button at the right.</div>
-          </div>
-        </div>
+        <div id="items-list" class="flex-grow-1 overflow-auto"></div>
+        <div class="mt-2 text-end muted-small">Each item has Edit / Duplicate / Delete actions.</div>
       </div>
     </div>
+  </div>
+</div>
 
-    <!-- SECOND ROW: editor (left) and JSON viewer (right) -->
-    <div class="second-row">
-      <div class="editor-col">
-        <div class="card editor-card">
-          <div class="card-body p-3 d-flex flex-column">
-            <h6 class="mb-2">Editor</h6>
-            <div class="form-fields">
-              <!-- Editor shows only the selected item details (no items list here) -->
-              <form id="item-form">
-                <input type="hidden" id="form-cat-id" />
-                <input type="hidden" id="form-item-id" />
+<!-- SECOND ROW: editor (left) and JSON viewer (right) -->
+<div class="second-row">
+  <div class="editor-col">
+    <div class="card editor-card">
+      <div class="card-body p-3 d-flex flex-column">
+        <h6 class="mb-2">Editor</h6>
+        <div class="form-fields">
+          <!-- Editor shows only the selected item details (no items list here) -->
+          <form id="item-form">
+            <input type="hidden" id="form-cat-id" />
+            <input type="hidden" id="form-item-id" />
 
-                <div class="mb-2">
-                  <label class="form-label small">Title</label>
-                  <input id="form-title" class="form-control form-control-sm" />
-                </div>
-
-                <div class="mb-2">
-                  <label class="form-label small">ID</label>
-                  <input id="form-id" class="form-control form-control-sm" />
-                </div>
-
-                <div class="mb-2">
-                  <label class="form-label small">Type</label>
-                  <select id="form-type" class="form-select form-select-sm">
-                    <option value="text">text</option>
-                    <option value="links">links</option>
-                    <option value="table">table</option>
-                    <option value="notes">notes</option>
-                    <option value="code">code</option>
-                    <option value="image">image</option>
-                    <option value="other">other</option>
-                  </select>
-                </div>
-
-                <div class="mb-2">
-                  <label class="form-label small">Created</label>
-                  <input id="form-created" type="date" class="form-control form-control-sm" />
-                </div>
-
-                <div class="mb-2">
-                  <label class="form-label small">Tags (comma-separated)</label>
-                  <input id="form-tags" class="form-control form-control-sm" />
-                </div>
-
-                <div id="payload-area" class="mb-2">
-                  <label class="form-label small">Payload (JSON)</label>
-                  <textarea id="form-payload-json" class="form-control form-control-sm" rows="6"></textarea>
-                  <div class="form-text muted-small">Edit payload as JSON here.</div>
-                </div>
-              </form>
+            <div class="mb-2">
+              <label class="form-label small">Title</label>
+              <input id="form-title" class="form-control form-control-sm" />
             </div>
 
-            <div class="form-actions">
-              <button type="button" id="save-item" class="btn btn-primary btn-sm">Save</button>
-              <button type="button" id="delete-item" class="btn btn-danger btn-sm ms-2">Delete</button>
+            <div class="mb-2">
+              <label class="form-label small">ID</label>
+              <input id="form-id" class="form-control form-control-sm" />
             </div>
-          </div>
+
+            <div class="mb-2">
+              <label class="form-label small">Type</label>
+              <select id="form-type" class="form-select form-select-sm">
+                <option value="text">text</option>
+                <option value="links">links</option>
+                <option value="table">table</option>
+                <option value="notes">notes</option>
+                <option value="code">code</option>
+                <option value="image">image</option>
+                <option value="other">other</option>
+              </select>
+            </div>
+
+            <div class="mb-2">
+              <label class="form-label small">Created</label>
+              <input id="form-created" type="date" class="form-control form-control-sm" />
+            </div>
+
+            <div class="mb-2">
+              <label class="form-label small">Tags (comma-separated)</label>
+              <input id="form-tags" class="form-control form-control-sm" />
+            </div>
+
+            <div id="payload-area" class="mb-2">
+              <label class="form-label small">Payload (JSON)</label>
+              <textarea id="form-payload-json" class="form-control form-control-sm" rows="6"></textarea>
+              <div class="form-text muted-small">Edit payload as JSON here.</div>
+            </div>
+          </form>
         </div>
-      </div>
 
-      <div class="json-col">
-        <div class="card json-card">
-          <div class="card-body d-flex flex-column p-3">
-            <div class="d-flex align-items-center justify-content-between mb-2">
-              <h6 class="mb-0">JSON Viewer</h6>
-              <div class="tree-controls">
-                <button id="btn-expand-all" class="btn btn-sm btn-outline-secondary" title="Expand all"><i class="fa-solid fa-plus"></i></button>
-                <button id="btn-collapse-all" class="btn btn-sm btn-outline-secondary" title="Collapse all"><i class="fa-solid fa-minus"></i></button>
-              </div>
-            </div>
-
-            <div id="json-tree" class="json-body json-tree border rounded overflow-auto"></div>
-            <div class="mt-2 text-end muted-small">Click keys to expand/collapse.</div>
-          </div>
+        <div class="form-actions">
+          <button type="button" id="save-item" class="btn btn-primary btn-sm">Save</button>
+          <button type="button" id="delete-item" class="btn btn-danger btn-sm ms-2">Delete</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- libs -->
-  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <div class="json-col">
+    <div class="card json-card">
+      <div class="card-body d-flex flex-column p-3">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <h6 class="mb-0">JSON Viewer</h6>
+          <div class="tree-controls">
+            <button id="btn-expand-all" class="btn btn-sm btn-outline-secondary" title="Expand all"><i class="fa-solid fa-plus"></i></button>
+            <button id="btn-collapse-all" class="btn btn-sm btn-outline-secondary" title="Collapse all"><i class="fa-solid fa-minus"></i></button>
+          </div>
+        </div>
 
-  <script>
+        <div id="json-tree" class="json-body json-tree border rounded overflow-auto"></div>
+        <div class="mt-2 text-end muted-small">Click keys to expand/collapse.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+  </div>  <!-- libs -->  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.min.js"></script>  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>  <script>
     const DEFAULT_SOURCE = 'https://raw.githubusercontent.com/thejeshpr/info/refs/heads/main/data.json';
     let sourceUrl = DEFAULT_SOURCE;
     let catalog = null, selectedCategoryId = null, selectedItemId = null;
@@ -254,13 +247,11 @@
 
       $('#items-title').text(cat.name);
       $('#items-meta').text('id: '+cat.id+' — '+(cat.items?cat.items.length:0)+' items');
-      $('#add-item').prop('disabled', false).off('click').on('click', ()=> addItem());
-      $('#delete-cat').prop('disabled', false).off('click').on('click', ()=> { if(confirm('Delete category '+cat.name+'?')) deleteCategory(cat.id); });
       renderItems(cat);
       clearForm();
     }
 
-    // Render items (first row right)
+    // Render items (first row right), with Edit / Duplicate / Delete buttons
     function renderItems(cat){
       const $wrap = $('#items-list').empty();
       (cat.items||[]).forEach(it=>{
@@ -277,19 +268,46 @@
             </div>
             <div style="display:flex; gap:8px; align-items:center;">
               <button class="btn btn-sm btn-outline-primary btn-select-item" title="Edit item"><i class="fa-solid fa-pen"></i></button>
+              <button class="btn btn-sm btn-outline-secondary btn-dup-item" title="Duplicate item"><i class="fa-solid fa-copy"></i></button>
               <button class="btn btn-sm btn-outline-danger btn-delete-item" title="Delete item"><i class="fa-solid fa-trash"></i></button>
             </div>
           </div>
         `);
         // select button -> load into editor (2nd row)
         $row.find('.btn-select-item').on('click', ()=> selectItem(cat.id, it.id));
+        // duplicate button
+        $row.find('.btn-dup-item').on('click', ()=> {
+          if(!confirm('Duplicate item "'+it.title+'"?')) return;
+          duplicateItem(cat.id, it.id);
+        });
         // delete button
         $row.find('.btn-delete-item').on('click', ()=> {
-          if(!confirm('Delete item \"'+it.title+'\"?')) return;
+          if(!confirm('Delete item "'+it.title+'"?')) return;
           deleteItem(cat.id, it.id);
         });
         $wrap.append($row);
       });
+    }
+
+    // Duplicate an item within the category (create unique id)
+    function duplicateItem(catId, itemId){
+      const cat = (catalog.categories||[]).find(c=>c.id===catId); if(!cat) return;
+      const it = (cat.items||[]).find(x=>x.id===itemId); if(!it) return;
+      // Deep clone
+      const copy = JSON.parse(JSON.stringify(it));
+      // generate unique id
+      let base = (copy.id||'item').replace(/-copy(\-\d+)?$/,'');
+      let newId = base + '-copy';
+      let idx = 1;
+      while(cat.items.find(x=>x.id===newId)){
+        idx++; newId = base + '-copy-' + idx;
+      }
+      copy.id = newId;
+      copy.title = copy.title + ' (copy)';
+      cat.items.push(copy);
+      renderItems(cat); renderCategories(); renderTree();
+      // auto-select the new copy
+      selectItem(catId, copy.id);
     }
 
     // When an item is clicked (select for editing) we fill the editor on 2nd row
@@ -310,8 +328,8 @@
         if(confirm('Delete item '+it.title+'?')) deleteItem(catId, itemId);
       });
       // highlight selected item row visually in the items list
-      $('#items-list .item-row').removeClass('active');
-      $(`#items-list .item-row[data-id='${itemId}']`).addClass('active').css('outline','2px solid rgba(13,110,253,0.15)');
+      $('#items-list .item-row').removeClass('active').css('outline','none');
+      $(`#items-list .item-row[data-id='${itemId}']`).addClass('active').css('outline','2px solid rgba(13,110,253,0.12)');
       // also highlight category
       $('#categories-list .list-group-item').removeClass('active');
       $(`#categories-list .list-group-item[data-id='${catId}']`).addClass('active');
@@ -462,6 +480,5 @@
       $('#sourceUrlInput').val(DEFAULT_SOURCE);
       loadCatalog();
     });
-  </script>
-</body>
+  </script></body>
 </html>
