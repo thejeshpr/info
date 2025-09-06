@@ -1,205 +1,203 @@
 <!doctype html>
+
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Catalog Editor — data.json</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.0/css/all.min.css" rel="stylesheet">
   <style>
-    :root { --card-radius: 12px; }
+    :root{--card-radius:12px}
+    html,body{height:100%}
     body { background: #f6f8fa; }
-    .card { border-radius: var(--card-radius); }
-    .muted-small { font-size: .85rem; color: #6c757d; }
-    .tag-badge { margin-right: 6px; }
-    .list-group-item.active { background: #e9ecef; color: #000; }
+    .card{ border-radius:var(--card-radius); }
+    .muted-small { font-size: .85rem; color:#6c757d }
+    .tag-badge { margin-right:6px }/* Header layout */
+.header-row { align-items:center; gap:12px }
+.header-title { display:flex; align-items:center; gap:12px }
+.url-center { display:flex; justify-content:center }
+.url-input { width:100%; max-width:760px }
 
-    /* Layout: middle area is a flex container so form fills available height */
-    .middle-row { display:flex; gap:16px; align-items:flex-start; }
-    .items-list-wrap { width:38%; display:flex; flex-direction:column; }
-    .form-wrap { width:62%; display:flex; flex-direction:column; }
-    .form-body { display:flex; flex-direction:column; gap:8px; height:100%; }
-    .form-fields { overflow:auto; }
-    .form-actions { border-top: 1px solid rgba(0,0,0,0.04); padding-top:10px; display:flex; justify-content:flex-end; gap:8px; }
-    textarea#form-payload-json { min-height: 140px; width: 100%; }
+/* Main layout: use full height and consistent column heights */
+.main-row { height: calc(100vh - 130px); display:flex; gap:16px; }
+.col-left, .col-center, .col-right { height:100%; }
+.col-left .card, .col-center .card, .col-right .card { height:100%; display:flex; flex-direction:column }
 
-    /* Card heights and scrolling */
-    .sidebar .list-group, .items-list-wrap #items-list, .json-col #json-preview {
-      max-height: calc(100vh - 220px);
-      overflow: auto;
-    }
+/* Categories: make list scroll inside card body */
+#categories-list { overflow:auto; }
 
-    /* Loading overlay */
-    .loading-overlay {
-      position: fixed; inset: 0; display:flex; align-items:center; justify-content:center;
-      background: rgba(255,255,255,0.75); z-index: 1050; font-size: 1rem;
-    }
+/* Center column: items list + form; keep form actions pinned to bottom */
+.center-inner { display:flex; flex-direction:column; height:100%; }
+.center-top { display:flex; align-items:center; justify-content:space-between; padding-bottom:6px }
+.center-mid { display:flex; gap:16px; flex:1; overflow:hidden }
+.items-list-wrap { width:36%; display:flex; flex-direction:column; overflow:hidden }
+#items-list { overflow:auto; flex:1 }
+.form-wrap { width:64%; display:flex; flex-direction:column; }
+.form-card { display:flex; flex-direction:column; height:100%; }
+.form-fields { padding:12px; overflow:auto; flex:1 }
+.form-actions { border-top:1px solid rgba(0,0,0,0.04); padding:10px; display:flex; justify-content:flex-end; background:#fff }
 
-    /* Responsive tweaks */
-    @media (max-width: 991.98px) {
-      .items-list-wrap { width: 40%; }
-      .form-wrap { width: 60%; }
-    }
-    @media (max-width: 767.98px) {
-      .middle-row { flex-direction: column; }
-      .items-list-wrap, .form-wrap { width:100%; }
-      .sidebar .list-group, .items-list-wrap #items-list, .json-col #json-preview {
-        max-height: none;
-      }
-      .form-actions { position: static; padding-top: 6px; }
-      .muted-small { font-size: .78rem; }
-      h3 { font-size: 1.05rem; }
-      .tag-badge { font-size: .75rem; padding: 0.2rem 0.4rem; }
-      .card { box-shadow: none; }
-      textarea#form-payload-json { min-height: 160px; }
-      .ms-auto.d-flex { width:100%; gap:8px; }
-      .ms-auto.d-flex button { width: 100%; }
-    }
-    @media (max-width: 480px) {
-      .json-col { font-size: 0.82rem; }
-    }
+/* Right column preview should scroll */
+#json-preview { overflow:auto; max-height:100%; white-space:pre-wrap; }
+
+/* Inputs full width fix */
+.form-control, .form-select { width:100% }
+
+/* Mobile responsiveness */
+@media (max-width: 991.98px){
+  .url-input { max-width:520px }
+}
+@media (max-width: 767.98px){
+  .header-title, .url-center, .header-actions { width:100%; }
+  .main-row { flex-direction:column; height:auto }
+  .col-left, .col-center, .col-right { height:auto }
+  .center-mid { flex-direction:column }
+  .items-list-wrap, .form-wrap { width:100% }
+  .form-actions { position:static; }
+}
+
+/* Small polish */
+.list-group-item { cursor:pointer }
+.btn-sm { padding:.35rem .6rem }
+
   </style>
 </head>
 <body>
-  <div class="loading-overlay" id="loadingOverlay" style="display:none">
-    <div class="text-center">
-      <div class="spinner-border" role="status" aria-hidden="true"></div>
-      <div class="mt-2">Loading JSON...</div>
-    </div>
-  </div>
-
   <div class="container-fluid py-3">
-    <div class="d-flex align-items-center mb-3">
-      <h3 class="me-3"><i class="fa-solid fa-database"></i> Catalog Editor</h3>
-      <div class="muted-small">Always loads JSON from the given GitHub URL, edit visually, then copy or download the updated JSON.</div>
-
-      <div class="ms-auto d-flex flex-column flex-md-row align-items-stretch align-items-md-center" style="gap:8px;">
-        <button id="btn-generate" class="btn btn-primary btn-sm"><i class="fa-solid fa-pen"></i> Generate JSON</button>
-        <button id="btn-copy" class="btn btn-success btn-sm"><i class="fa-solid fa-copy"></i> Copy JSON</button>
-        <button id="btn-download" class="btn btn-outline-success btn-sm"><i class="fa-solid fa-file-arrow-down"></i> Download</button>
-      </div>
+    <div class="row header-row mb-3 align-items-center">
+      <div class="col-12 col-md-3 header-title">
+        <h3 class="mb-0"><i class="fa-solid fa-database"></i> Catalog Editor</h3>
+        <div class="muted-small d-none d-md-block">Always loads JSON from the given GitHub URL, edit visually, then copy or download the updated JSON.</div>
+      </div><div class="col-12 col-md-6 url-center">
+    <div class="input-group url-input">
+      <input type="text" id="sourceUrlInput" class="form-control form-control-sm" aria-label="JSON URL" />
+      <button class="btn btn-sm btn-primary" id="btn-load-url"><i class="fa-solid fa-download"></i>&nbsp;Load</button>
+      <button class="btn btn-sm btn-outline-secondary" id="btn-reset-url">Reset</button>
     </div>
+  </div>
 
-    <div class="row g-3">
-      <!-- Categories -->
-      <div class="col-12 col-md-3">
-        <div class="card sidebar h-100">
-          <div class="card-body d-flex flex-column">
-            <div class="d-flex mb-2">
-              <h6 class="mb-0">Categories</h6>
-              <button id="add-category" class="btn btn-sm btn-outline-primary ms-auto" title="Add category"><i class="fa-solid fa-plus"></i></button>
-            </div>
-            <div id="categories-list" class="list-group flex-grow-1 overflow-auto"></div>
-          </div>
+  <div class="col-12 col-md-3 header-actions text-md-end mt-2 mt-md-0">
+    <button id="btn-generate" class="btn btn-primary btn-sm me-2"><i class="fa-solid fa-pen"></i> Generate JSON</button>
+    <button id="btn-copy" class="btn btn-success btn-sm me-2"><i class="fa-solid fa-copy"></i> Copy JSON</button>
+    <button id="btn-download" class="btn btn-outline-success btn-sm"><i class="fa-solid fa-file-arrow-down"></i> Download</button>
+  </div>
+</div>
+
+<div class="main-row">
+  <div class="col-left col-12 col-md-3">
+    <div class="card">
+      <div class="card-body d-flex flex-column p-3">
+        <div class="d-flex mb-2 align-items-center">
+          <h6 class="mb-0">Categories</h6>
+          <button id="add-category" class="btn btn-sm btn-outline-primary ms-auto" title="Add category"><i class="fa-solid fa-plus"></i></button>
         </div>
-      </div>
-
-      <!-- Items + Form -->
-      <div class="col-12 col-md-6">
-        <div class="card h-100">
-          <div class="card-body d-flex flex-column" style="min-height:420px;">
-            <div class="d-flex mb-2 align-items-center">
-              <div>
-                <h6 id="selected-cat-name" class="mb-0">Select a category</h6>
-                <div id="selected-cat-meta" class="muted-small"></div>
-              </div>
-              <div class="ms-auto">
-                <button id="add-item" class="btn btn-sm btn-outline-primary" disabled><i class="fa-solid fa-file-circle-plus"></i> Add item</button>
-                <button id="delete-cat" class="btn btn-sm btn-outline-danger ms-2" disabled title="Delete category"><i class="fa-solid fa-trash"></i></button>
-              </div>
-            </div>
-
-            <div class="middle-row flex-grow-1">
-              <div class="items-list-wrap">
-                <div class="mb-2"><small class="muted-small">Items</small></div>
-                <div id="items-list" class="list-group h-100 overflow-auto"></div>
-              </div>
-
-              <div class="form-wrap">
-                <div class="form-body">
-                  <div class="form-fields p-2" style="background:transparent;">
-                    <form id="item-form">
-                      <input type="hidden" id="form-cat-id" />
-                      <input type="hidden" id="form-item-id" />
-
-                      <div class="mb-2">
-                        <label class="form-label small">Title</label>
-                        <input id="form-title" class="form-control form-control-sm" required />
-                      </div>
-
-                      <div class="mb-2">
-                        <label class="form-label small">ID</label>
-                        <input id="form-id" class="form-control form-control-sm" required />
-                      </div>
-
-                      <div class="mb-2">
-                        <label class="form-label small">Type</label>
-                        <select id="form-type" class="form-select form-select-sm">
-                          <option value="text">text</option>
-                          <option value="links">links</option>
-                          <option value="table">table</option>
-                          <option value="notes">notes</option>
-                          <option value="code">code</option>
-                          <option value="image">image</option>
-                          <option value="other">other</option>
-                        </select>
-                      </div>
-
-                      <div class="mb-2">
-                        <label class="form-label small">Created</label>
-                        <input id="form-created" type="date" class="form-control form-control-sm" />
-                      </div>
-
-                      <div class="mb-2">
-                        <label class="form-label small">Tags (comma-separated)</label>
-                        <input id="form-tags" class="form-control form-control-sm" />
-                      </div>
-
-                      <div id="payload-area" class="mb-2">
-                        <label class="form-label small">Payload</label>
-                        <textarea id="form-payload-json" class="form-control form-control-sm" rows="6"></textarea>
-                        <div class="form-text muted-small">You can edit payload as JSON here.</div>
-                      </div>
-                    </form>
-                  </div>
-
-                  <div class="form-actions">
-                    <button type="button" id="save-item" class="btn btn-primary btn-sm">Save</button>
-                    <button type="button" id="delete-item" class="btn btn-danger btn-sm">Delete</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </div>
-
-      <!-- JSON Preview -->
-      <div class="col-12 col-md-3 json-col">
-        <div class="card h-100">
-          <div class="card-body d-flex flex-column">
-            <h6 class="mb-2">Live JSON Preview</h6>
-            <div id="json-preview" class="border rounded p-2 mb-2 bg-white flex-grow-1" style="overflow:auto; white-space:pre-wrap;"></div>
-            <div class="mt-2 text-end muted-small">Use <strong>Generate JSON</strong> to refresh preview. Copy or Download when ready.</div>
-          </div>
-        </div>
+        <div id="categories-list" class="list-group flex-grow-1"></div>
       </div>
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  <script>
-    const sourceUrl = 'https://raw.githubusercontent.com/thejeshpr/info/refs/heads/main/data.json';
-    let catalog = null;
-    let selectedCategoryId = null;
-    let selectedItemId = null;
+  <div class="col-center col-12 col-md-6">
+    <div class="card">
+      <div class="card-body p-3 center-inner">
+        <div class="center-top">
+          <div>
+            <h6 id="selected-cat-name" class="mb-0">Select a category</h6>
+            <div id="selected-cat-meta" class="muted-small"></div>
+          </div>
+          <div>
+            <button id="add-item" class="btn btn-sm btn-outline-primary" disabled><i class="fa-solid fa-file-circle-plus"></i>&nbsp;Add item</button>
+            <button id="delete-cat" class="btn btn-sm btn-outline-danger ms-2" disabled title="Delete category"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        </div>
+
+        <div class="center-mid">
+          <div class="items-list-wrap">
+            <div class="mb-2"><small class="muted-small">Items</small></div>
+            <div id="items-list" class="list-group bg-transparent"></div>
+          </div>
+
+          <div class="form-wrap">
+            <div class="form-card">
+              <div class="form-fields bg-white rounded-1">
+                <form id="item-form">
+                  <input type="hidden" id="form-cat-id" />
+                  <input type="hidden" id="form-item-id" />
+
+                  <div class="mb-2">
+                    <label class="form-label small">Title</label>
+                    <input id="form-title" class="form-control form-control-sm" />
+                  </div>
+
+                  <div class="mb-2">
+                    <label class="form-label small">ID</label>
+                    <input id="form-id" class="form-control form-control-sm" />
+                  </div>
+
+                  <div class="mb-2">
+                    <label class="form-label small">Type</label>
+                    <select id="form-type" class="form-select form-select-sm">
+                      <option value="text">text</option>
+                      <option value="links">links</option>
+                      <option value="table">table</option>
+                      <option value="notes">notes</option>
+                      <option value="code">code</option>
+                      <option value="image">image</option>
+                      <option value="other">other</option>
+                    </select>
+                  </div>
+
+                  <div class="mb-2">
+                    <label class="form-label small">Created</label>
+                    <input id="form-created" type="date" class="form-control form-control-sm" />
+                  </div>
+
+                  <div class="mb-2">
+                    <label class="form-label small">Tags (comma-separated)</label>
+                    <input id="form-tags" class="form-control form-control-sm" />
+                  </div>
+
+                  <div id="payload-area" class="mb-2">
+                    <label class="form-label small">Payload</label>
+                    <textarea id="form-payload-json" class="form-control form-control-sm" rows="6"></textarea>
+                    <div class="form-text muted-small">You can edit payload as JSON here.</div>
+                  </div>
+                </form>
+              </div>
+
+              <div class="form-actions">
+                <button type="button" id="save-item" class="btn btn-primary btn-sm">Save</button>
+                <button type="button" id="delete-item" class="btn btn-danger btn-sm ms-2">Delete</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="col-right col-12 col-md-3">
+    <div class="card">
+      <div class="card-body d-flex flex-column p-3">
+        <h6 class="mb-2">Live JSON Preview</h6>
+        <div id="json-preview" class="border rounded p-2 mb-2 bg-white flex-grow-1" style="overflow:auto; white-space:pre-wrap;"></div>
+        <div class="mt-2 text-end muted-small">Use <strong>Generate JSON</strong> to refresh preview. Copy or Download when ready.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+  </div>  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.min.js"></script>  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>  <script>
+    const DEFAULT_SOURCE = 'https://raw.githubusercontent.com/thejeshpr/info/refs/heads/main/data.json';
+    let sourceUrl = DEFAULT_SOURCE;
+    let catalog = null; let selectedCategoryId = null; let selectedItemId = null;
 
     function showLoading(on){
-      $('#loadingOverlay').toggle(!!on);
-      $('#add-category, #add-item, #save-item, #delete-item, #delete-cat, #btn-copy, #btn-download, #btn-generate').prop('disabled', !!on);
+      $('#loadingOverlay')?.toggle?.(!!on);
+      $('#add-category, #add-item, #save-item, #delete-item, #delete-cat, #btn-copy, #btn-download, #btn-generate, #btn-load-url, #btn-reset-url').prop('disabled', !!on);
     }
+
     function escapeHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
     async function loadCatalog(){
@@ -210,148 +208,36 @@
         catalog = await res.json();
         if(!catalog || typeof catalog !== 'object') throw new Error('Invalid JSON');
         if(!Array.isArray(catalog.categories)) catalog.categories = [];
-        selectedCategoryId = null; selectedItemId = null;
-        renderCategories(); renderPreview();
+        selectedCategoryId = null; selectedItemId = null; renderCategories(); renderPreview();
       }catch(err){
-        console.error(err);
-        alert('Error loading JSON from source. See console for details.');
-        catalog = { meta:{ title:'Untitled', updated: new Date().toISOString().slice(0,10) }, categories: [] };
-        renderCategories(); renderPreview();
-      }finally{
-        showLoading(false);
-      }
+        console.error(err); alert('Error loading JSON from source. See console for details.'); catalog = { meta:{title:'Untitled', updated:new Date().toISOString().slice(0,10)}, categories:[] }; renderCategories(); renderPreview();
+      }finally{ showLoading(false); }
     }
 
     function renderCategories(){
-      const $list = $('#categories-list').empty();
-      (catalog.categories||[]).forEach(cat=>{
-        const $item = $(`
-          <button type="button" class="list-group-item list-group-item-action d-flex align-items-center" data-id="${cat.id}">
-            <div>
-              <div><strong>${escapeHtml(cat.name)}</strong></div>
-              <div class="muted-small">${escapeHtml(cat.id)}</div>
-            </div>
-            <div class="ms-auto badge bg-secondary rounded-pill">${(cat.items||[]).length}</div>
-          </button>`);
-        $item.on('click', ()=> selectCategory(cat.id));
-        $list.append($item);
-      });
-      if(selectedCategoryId) $list.find(`[data-id='${selectedCategoryId}']`).addClass('active');
+      const $list = $('#categories-list').empty(); (catalog.categories||[]).forEach(cat=>{
+        const $item = $(`\n          <button type="button" class="list-group-item list-group-item-action d-flex align-items-center" data-id="${cat.id}">\n            <div>\n              <div><strong>${escapeHtml(cat.name)}</strong></div>\n              <div class="muted-small">${escapeHtml(cat.id)}</div>\n            </div>\n            <div class="ms-auto badge bg-secondary rounded-pill">${(cat.items||[]).length}</div>\n          </button>`);
+        $item.on('click', ()=> selectCategory(cat.id)); $list.append($item);
+      }); if(selectedCategoryId) $list.find(`[data-id='${selectedCategoryId}']`).addClass('active');
     }
 
-    function selectCategory(catId){
-      selectedCategoryId = catId;
-      const cat = (catalog.categories||[]).find(c=>c.id===catId);
-      if(!cat) return;
-      $('#selected-cat-name').text(cat.name);
-      $('#selected-cat-meta').text('id: '+cat.id + (cat.items?(' — '+cat.items.length+' items'):''));
-      $('#add-item').prop('disabled', false);
-      $('#delete-cat').prop('disabled', false).off('click').on('click', ()=> { if(confirm('Delete category '+cat.name+'?')) deleteCategory(cat.id); });
-      renderCategories(); renderItems(cat); clearForm();
-    }
+    function selectCategory(catId){ selectedCategoryId = catId; const cat = (catalog.categories||[]).find(c=>c.id===catId); if(!cat) return; $('#selected-cat-name').text(cat.name); $('#selected-cat-meta').text('id: '+cat.id+' — '+(cat.items?cat.items.length:0)+' items'); $('#add-item').prop('disabled', false); $('#delete-cat').prop('disabled', false).off('click').on('click', ()=>{ if(confirm('Delete category '+cat.name+'?')) deleteCategory(cat.id); }); renderCategories(); renderItems(cat); clearForm(); }
 
-    function renderItems(cat){
-      const $list = $('#items-list').empty();
-      (cat.items||[]).forEach(it=>{
-        const $it = $(`
-          <button type="button" class="list-group-item list-group-item-action d-flex align-items-start" data-id="${it.id}">
-            <div style="flex:1">
-              <div><strong>${escapeHtml(it.title)}</strong></div>
-              <div class="muted-small">${escapeHtml(it.id)} • ${escapeHtml(it.type||'')} • ${escapeHtml(it.created||'')}</div>
-            </div>
-            <div>${(it.tags||[]).map(t=>`<span class="badge bg-light text-dark tag-badge">${escapeHtml(t)}</span>`).join('')}</div>
-          </button>`);
-        $it.on('click', ()=> selectItem(cat.id, it.id));
-        $list.append($it);
-      });
-    }
+    function renderItems(cat){ const $list = $('#items-list').empty(); (cat.items||[]).forEach(it=>{ const $it = $(`\n          <button type="button" class="list-group-item list-group-item-action d-flex align-items-start" data-id="${it.id}">\n            <div style="flex:1">\n              <div><strong>${escapeHtml(it.title)}</strong></div>\n              <div class="muted-small">${escapeHtml(it.id)} • ${escapeHtml(it.type||'')} • ${escapeHtml(it.created||'')}</div>\n            </div>\n            <div>${(it.tags||[]).map(t=>`<span class="badge bg-light text-dark tag-badge">${escapeHtml(t)}</span>`).join('')}</div>\n          </button>`); $it.on('click', ()=> selectItem(cat.id, it.id)); $list.append($it); }); }
 
-    function selectItem(catId, itemId){
-      selectedItemId = itemId;
-      const cat = (catalog.categories||[]).find(c=>c.id===catId);
-      const it = (cat && cat.items||[]).find(x=>x.id===itemId);
-      if(!it) return;
-      $('#form-cat-id').val(catId);
-      $('#form-item-id').val(itemId);
-      $('#form-title').val(it.title||'');
-      $('#form-id').val(it.id||'');
-      $('#form-type').val(it.type||'other');
-      $('#form-created').val(it.created||'');
-      $('#form-tags').val((it.tags||[]).join(', '));
-      $('#form-payload-json').val(JSON.stringify(it.payload||{}, null, 2));
-      $('#delete-item').prop('disabled', false).off('click').on('click', ()=> { if(confirm('Delete item '+it.title+'?')) deleteItem(catId, itemId); });
-      $('#items-list .list-group-item').removeClass('active');
-      $(`#items-list .list-group-item[data-id='${itemId}']`).addClass('active');
-    }
+    function selectItem(catId, itemId){ selectedItemId = itemId; const cat = (catalog.categories||[]).find(c=>c.id===catId); const it = (cat && cat.items||[]).find(x=>x.id===itemId); if(!it) return; $('#form-cat-id').val(catId); $('#form-item-id').val(itemId); $('#form-title').val(it.title||''); $('#form-id').val(it.id||''); $('#form-type').val(it.type||'other'); $('#form-created').val(it.created||''); $('#form-tags').val((it.tags||[]).join(', ')); $('#form-payload-json').val(JSON.stringify(it.payload||{}, null, 2)); $('#delete-item').prop('disabled', false).off('click').on('click', ()=>{ if(confirm('Delete item '+it.title+'?')) deleteItem(catId, itemId); }); $('#items-list .list-group-item').removeClass('active'); $(`#items-list .list-group-item[data-id='${itemId}']`).addClass('active'); }
 
-    function clearForm(){
-      selectedItemId = null;
-      $('#form-cat-id').val(''); $('#form-item-id').val('');
-      $('#form-title').val(''); $('#form-id').val('');
-      $('#form-type').val('text'); $('#form-created').val('');
-      $('#form-tags').val(''); $('#form-payload-json').val('{}');
-      $('#delete-item').prop('disabled', true);
-      $('#items-list .list-group-item').removeClass('active');
-    }
+    function clearForm(){ selectedItemId = null; $('#form-cat-id').val(''); $('#form-item-id').val(''); $('#form-title').val(''); $('#form-id').val(''); $('#form-type').val('text'); $('#form-created').val(''); $('#form-tags').val(''); $('#form-payload-json').val('{}'); $('#delete-item').prop('disabled', true); $('#items-list .list-group-item').removeClass('active'); }
 
-    function addCategory(){
-      const name = prompt('Category name'); if(!name) return;
-      const id = slugify(name);
-      if((catalog.categories||[]).find(c=>c.id===id)){ alert('A category with this id already exists.'); return; }
-      const cat = { id, name, items: [] }; catalog.categories.push(cat);
-      renderCategories(); selectCategory(id); renderPreview();
-    }
-
-    function deleteCategory(catId){
-      catalog.categories = (catalog.categories||[]).filter(c=>c.id!==catId);
-      selectedCategoryId = null; renderCategories();
-      $('#selected-cat-name').text('Select a category'); $('#selected-cat-meta').text('');
-      $('#add-item').prop('disabled', true); $('#delete-cat').prop('disabled', true);
-      $('#items-list').empty(); clearForm(); renderPreview();
-    }
-
-    function addItem(){
-      const cat = (catalog.categories||[]).find(c=>c.id===selectedCategoryId); if(!cat) return;
-      const title = prompt('Item title'); if(!title) return;
-      const id = slugify(title); if((cat.items||[]).find(i=>i.id===id)){ alert('Item id exists in this category.'); return; }
-      const it = { id, title, type:'text', created: new Date().toISOString().slice(0,10), tags: [], payload: {} };
-      cat.items = cat.items || []; cat.items.push(it);
-      renderItems(cat); selectItem(cat.id, it.id); renderCategories(); renderPreview();
-    }
-
-    function deleteItem(catId, itemId){
-      const cat = (catalog.categories||[]).find(c=>c.id===catId); if(!cat) return;
-      cat.items = (cat.items||[]).filter(i=>i.id!==itemId); clearForm(); renderItems(cat); renderCategories(); renderPreview();
-    }
-
-    function saveItem(){
-      const catId = $('#form-cat-id').val() || selectedCategoryId;
-      const cat = (catalog.categories||[]).find(c=>c.id===catId); if(!cat) return alert('No category selected');
-      const itemIdOrig = $('#form-item-id').val();
-      const itemId = $('#form-id').val().trim();
-      const title = $('#form-title').val().trim();
-      const type = $('#form-type').val();
-      const created = $('#form-created').val();
-      const tags = $('#form-tags').val().split(',').map(s=>s.trim()).filter(Boolean);
-      let payload = {};
-      try{ payload = JSON.parse($('#form-payload-json').val() || '{}'); }catch(e){ alert('Payload JSON invalid'); return; }
-
-      if(itemIdOrig){
-        const it = (cat.items||[]).find(i=>i.id===itemIdOrig); if(!it) return;
-        if(itemId !== itemIdOrig){ if(cat.items.find(x=>x.id===itemId)) return alert('Another item with that id exists'); }
-        it.id = itemId; it.title = title; it.type = type; it.created = created; it.tags = tags; it.payload = payload;
-      } else {
-        if(cat.items.find(x=>x.id===itemId)) return alert('Item id exists');
-        const it = { id:itemId, title, type, created, tags, payload }; cat.items = cat.items || []; cat.items.push(it);
-      }
-      renderItems(cat); renderCategories(); renderPreview();
-    }
+    function addCategory(){ const name = prompt('Category name'); if(!name) return; const id = slugify(name); if((catalog.categories||[]).find(c=>c.id===id)){ alert('A category with this id already exists.'); return; } const cat = { id, name, items: [] }; catalog.categories.push(cat); renderCategories(); selectCategory(id); renderPreview(); }
+    function deleteCategory(catId){ catalog.categories = (catalog.categories||[]).filter(c=>c.id!==catId); selectedCategoryId = null; renderCategories(); $('#selected-cat-name').text('Select a category'); $('#selected-cat-meta').text(''); $('#add-item').prop('disabled', true); $('#delete-cat').prop('disabled', true); $('#items-list').empty(); clearForm(); renderPreview(); }
+    function addItem(){ const cat = (catalog.categories||[]).find(c=>c.id===selectedCategoryId); if(!cat) return; const title = prompt('Item title'); if(!title) return; const id = slugify(title); if((cat.items||[]).find(i=>i.id===id)){ alert('Item id exists in this category.'); return; } const it = { id, title, type:'text', created:new Date().toISOString().slice(0,10), tags:[], payload:{} }; cat.items = cat.items||[]; cat.items.push(it); renderItems(cat); selectItem(cat.id, it.id); renderCategories(); renderPreview(); }
+    function deleteItem(catId, itemId){ const cat = (catalog.categories||[]).find(c=>c.id===catId); if(!cat) return; cat.items = (cat.items||[]).filter(i=>i.id!==itemId); clearForm(); renderItems(cat); renderCategories(); renderPreview(); }
+    function saveItem(){ const catId = $('#form-cat-id').val() || selectedCategoryId; const cat = (catalog.categories||[]).find(c=>c.id===catId); if(!cat) return alert('No category selected'); const itemIdOrig = $('#form-item-id').val(); const itemId = $('#form-id').val().trim(); const title = $('#form-title').val().trim(); const type = $('#form-type').val(); const created = $('#form-created').val(); const tags = $('#form-tags').val().split(',').map(s=>s.trim()).filter(Boolean); let payload = {}; try{ payload = JSON.parse($('#form-payload-json').val() || '{}'); }catch(e){ alert('Payload JSON invalid'); return; } if(itemIdOrig){ const it = (cat.items||[]).find(i=>i.id===itemIdOrig); if(!it) return; if(itemId !== itemIdOrig){ if(cat.items.find(x=>x.id===itemId)) return alert('Another item with that id exists'); } it.id = itemId; it.title = title; it.type = type; it.created = created; it.tags = tags; it.payload = payload; } else { if(cat.items.find(x=>x.id===itemId)) return alert('Item id exists'); const it = { id:itemId, title, type, created, tags, payload }; cat.items = cat.items||[]; cat.items.push(it); } renderItems(cat); renderCategories(); renderPreview(); }
 
     function renderPreview(){ $('#json-preview').text(JSON.stringify(catalog, null, 2)); }
-
     function copyJSON(){ const txt = JSON.stringify(catalog, null, 2); navigator.clipboard.writeText(txt).then(()=> alert('Copied JSON to clipboard')).catch(()=> alert('Copy failed')); }
-    function downloadJSON(){ const blob = new Blob([JSON.stringify(catalog, null, 2)], {type:'application/json'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href=url; a.download='data.updated.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); }
-
+    function downloadJSON(){ const blob = new Blob([JSON.stringify(catalog, null, 2)], {type:'application/json'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download='data.updated.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); }
     function slugify(s){ return (s||'').toString().toLowerCase().trim().replace(/[\s\_]+/g,'-').replace(/[^a-z0-9\-]/g,'').replace(/\-+/g,'-').replace(/^\-+|\-+$/g,''); }
 
     // Bind events
@@ -362,10 +248,10 @@
       $('#btn-copy').on('click', copyJSON);
       $('#btn-download').on('click', downloadJSON);
       $('#save-item').on('click', saveItem);
-
-      showLoading(true);
-      loadCatalog().finally(()=>{ /* showLoading toggled inside */ });
+      $('#btn-load-url').on('click', ()=>{ const v = $('#sourceUrlInput').val().trim(); if(!v) return alert('Enter a URL'); sourceUrl = v; loadCatalog(); });
+      $('#btn-reset-url').on('click', ()=>{ sourceUrl = DEFAULT_SOURCE; $('#sourceUrlInput').val(DEFAULT_SOURCE); loadCatalog(); });
+      $('#sourceUrlInput').val(DEFAULT_SOURCE);
+      loadCatalog();
     });
-  </script>
-</body>
+  </script></body>
 </html>
