@@ -9,37 +9,36 @@
   <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.0/css/all.min.css" rel="stylesheet">
 
   <style>
-    :root{ --card-radius:12px; --action-gap:10px; }
-    html,body{height:100%}
-    body{ background:#f6f8fa; font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; }
+    :root{ --card-radius:12px; --gap:12px; }
+    html,body{ height:100%; margin:0; padding:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:#f6f8fa; }
     .card{ border-radius:var(--card-radius); }
     .muted-small{ font-size:.85rem; color:#6c757d; }
     .tag-badge{ margin-right:6px; font-size:.78rem; }
 
-    /* Header layout */
-    .header-row{ align-items:center; gap:12px; margin-bottom:8px; }
-    .url-input{ width:100%; max-width:720px; }
-    .top-actions{ display:flex; gap:var(--action-gap); align-items:center; }
+    /* header */
+    .header-row { align-items:center; gap:12px; margin-bottom:10px; }
+    .url-input { width:100%; max-width:720px; }
 
-    /* first row area (categories + editor) and second row JSON viewer */
-    .first-row { display:flex; gap:16px; margin-bottom:14px; max-height: calc(60vh); }
-    .col-cats{ width:26%; }
-    .col-editor{ width:74%; }
-    .cats-card, .editor-card{ display:flex; flex-direction:column; height:100%; }
-    .cats-list{ overflow:auto; }
+    /* Categories row: single row full width */
+    .cats-row { margin-bottom:14px; }
+    .cats-card { display:flex; flex-direction:row; align-items:center; gap:12px; padding:12px; }
+    #categories-list { max-height:160px; overflow:auto; width:100%; }
 
-    /* Editor internals */
-    .editor-inner{ display:flex; gap:12px; height:100%; }
-    .items-list-wrap{ width:38%; display:flex; flex-direction:column; overflow:hidden; }
-    #items-list{ overflow:auto; flex:1; }
-    .form-wrap{ width:62%; display:flex; flex-direction:column; }
-    .form-card{ display:flex; flex-direction:column; height:100%; }
-    .form-fields{ padding:12px; overflow:auto; flex:1; background:#fff; }
-    .form-actions{ border-top:1px solid rgba(0,0,0,0.04); padding:10px; display:flex; justify-content:flex-end; background:#fff; }
+    /* Main area: editor (left) and json viewer (right) side-by-side */
+    .main-row { display:flex; gap:16px; height: calc(100vh - 240px); } /* header+cats+footer ~240px */
+    .editor-col { width: 66%; display:flex; flex-direction:column; }
+    .json-col { width: 34%; display:flex; flex-direction:column; }
 
-    /* JSON viewer row */
-    .json-row{ height: calc(38vh); }
-    .json-card{ height:100%; display:flex; flex-direction:column; }
+    .editor-card, .json-card { height:100%; display:flex; flex-direction:column; }
+    .editor-inner { display:flex; gap:12px; flex:1; overflow:hidden; }
+    .items-list-wrap { width:38%; display:flex; flex-direction:column; overflow:hidden; }
+    #items-list { overflow:auto; flex:1; }
+    .form-wrap { width:62%; display:flex; flex-direction:column; }
+    .form-fields { padding:12px; overflow:auto; flex:1; background:#fff; }
+    .form-actions { border-top:1px solid rgba(0,0,0,0.04); padding:10px; display:flex; justify-content:flex-end; background:#fff; }
+
+    /* JSON viewer */
+    .json-body { padding:12px; overflow:auto; background:#fff; flex:1; border-radius:8px; }
     .json-tree{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", monospace; font-size:0.9rem; }
     .json-node{ margin-left:10px; }
     details.json-branch>summary{ cursor:pointer; list-style:none; }
@@ -47,21 +46,17 @@
     .json-key{ color:#2b6cb0; } .json-string{ color:#2f855a; } .json-number{ color:#d53f8c; }
     .json-boolean{ color:#b67900; } .json-null{ color:#6c757d; } .json-bracket{ color:#333; }
 
-    /* Active item styling (improves contrast) */
-    .list-group-item.active{
-      background: #0d6efd !important;
-      color: #fff !important;
-      border-color: rgba(13,110,253,0.9);
-    }
-    .list-group-item.active .muted-small { color: rgba(255,255,255,0.9) !important; }
-    .list-group-item .badge.tag-badge { background: rgba(255,255,255,0.12); color:#fff; border: 1px solid rgba(255,255,255,0.12); }
+    /* Active item contrast */
+    .list-group-item.active{ background: #0d6efd !important; color:#fff !important; border-color: rgba(13,110,253,0.9); }
+    .list-group-item.active .muted-small{ color: rgba(255,255,255,0.9) !important; }
+    .list-group-item .badge.tag-badge{ background: rgba(255,255,255,0.12); color:#fff; border:1px solid rgba(255,255,255,0.12); }
 
-    /* small screens: stack */
-    @media (max-width: 991.98px){ .url-input{ max-width:520px; } }
+    /* responsive */
+    @media (max-width: 991.98px){ .url-input { max-width:520px; } }
     @media (max-width: 767.98px){
-      .first-row{ flex-direction:column; max-height: none; }
-      .col-cats, .col-editor{ width:100%; }
-      .json-row{ height:320px; margin-top:10px; }
+      .main-row{ flex-direction:column; height:auto; }
+      .editor-col, .json-col{ width:100%; }
+      #categories-list{ max-height:200px; }
     }
 
     .list-group-item{ cursor:pointer; }
@@ -69,15 +64,12 @@
   </style>
 </head>
 <body>
-  <div class="container-fluid py-3">
-    <!-- Header -->
+  <div class="container-fluid p-3">
+    <!-- header -->
     <div class="row header-row align-items-center">
       <div class="col-12 col-md-4 d-flex flex-column">
-        <div class="d-flex align-items-center" style="gap:12px;">
-          <h3 class="mb-0"><i class="fa-solid fa-database"></i> Catalog Editor</h3>
-        </div>
-        <div class="mt-2 top-actions">
-          <!-- action buttons grouped under title -->
+        <h3 class="mb-0"><i class="fa-solid fa-database"></i> Catalog Editor</h3>
+        <div class="mt-2 d-flex gap-2">
           <button id="btn-generate" class="btn btn-primary btn-sm"><i class="fa-solid fa-pen"></i> Generate JSON</button>
           <button id="btn-copy" class="btn btn-success btn-sm"><i class="fa-solid fa-copy"></i> Copy JSON</button>
           <button id="btn-download" class="btn btn-outline-success btn-sm"><i class="fa-solid fa-file-arrow-down"></i> Download</button>
@@ -92,26 +84,31 @@
         </div>
       </div>
 
-      <div class="col-12 col-md-3 text-md-end mt-2 mt-md-0">
-        <div class="muted-small d-none d-md-inline">Always loads JSON from the given GitHub URL, edit visually, then copy/download the updated JSON.</div>
+      <div class="col-12 col-md-3 text-md-end">
+        <div class="muted-small d-none d-md-block">Always loads JSON from the given GitHub URL, edit visually, then copy/download the updated JSON.</div>
       </div>
     </div>
 
-    <!-- FIRST ROW: categories + editor -->
-    <div class="first-row">
-      <div class="col-cats">
+    <!-- categories: full-width single row -->
+    <div class="row cats-row">
+      <div class="col-12">
         <div class="card cats-card">
-          <div class="card-body d-flex flex-column p-3">
-            <div class="d-flex mb-2 align-items-center">
-              <h6 class="mb-0">Categories</h6>
-              <button id="add-category" class="btn btn-sm btn-outline-primary ms-auto" title="Add category"><i class="fa-solid fa-plus"></i></button>
-            </div>
-            <div id="categories-list" class="list-group flex-grow-1 cats-list"></div>
+          <div style="min-width:220px">
+            <h6 class="mb-0">Categories</h6>
+          </div>
+          <div class="flex-grow-1" id="categories-list-container">
+            <div id="categories-list" class="list-group"></div>
+          </div>
+          <div class="ms-2">
+            <button id="add-category" class="btn btn-sm btn-outline-primary" title="Add category"><i class="fa-solid fa-plus"></i></button>
           </div>
         </div>
       </div>
+    </div>
 
-      <div class="col-editor">
+    <!-- main row: editor (left) and json viewer (right) side-by-side -->
+    <div class="row main-row">
+      <div class="col editor-col">
         <div class="card editor-card">
           <div class="card-body p-3 d-flex flex-column">
             <div class="d-flex align-items-center justify-content-between mb-2">
@@ -125,14 +122,14 @@
               </div>
             </div>
 
-            <div class="editor-inner" style="flex:1;">
-              <div class="items-list-wrap">
+            <div class="editor-inner">
+              <div class="items-list-wrap card" style="padding:12px; overflow:hidden;">
                 <div class="mb-2"><small class="muted-small">Items</small></div>
-                <div id="items-list" class="list-group h-100 overflow-auto"></div>
+                <div id="items-list" class="list-group flex-grow-1" style="overflow:auto;"></div>
               </div>
 
-              <div class="form-wrap">
-                <div class="form-card">
+              <div class="form-wrap card" style="padding:0; overflow:hidden;">
+                <div class="form-card" style="height:100%;">
                   <div class="form-fields">
                     <form id="item-form">
                       <input type="hidden" id="form-cat-id" />
@@ -185,28 +182,26 @@
                   </div>
                 </div>
               </div>
-
             </div>
 
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- SECOND ROW: full-width JSON viewer -->
-    <div class="json-row">
-      <div class="card json-card">
-        <div class="card-body p-3 d-flex flex-column">
-          <div class="d-flex align-items-center justify-content-between mb-2">
-            <h6 class="mb-0">JSON Viewer</h6>
-            <div class="tree-controls">
-              <button id="btn-expand-all" class="btn btn-sm btn-outline-secondary" title="Expand all"><i class="fa-solid fa-plus"></i></button>
-              <button id="btn-collapse-all" class="btn btn-sm btn-outline-secondary" title="Collapse all"><i class="fa-solid fa-minus"></i></button>
+      <div class="col json-col">
+        <div class="card json-card">
+          <div class="card-body d-flex flex-column p-3">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <h6 class="mb-0">JSON Viewer</h6>
+              <div class="tree-controls">
+                <button id="btn-expand-all" class="btn btn-sm btn-outline-secondary" title="Expand all"><i class="fa-solid fa-plus"></i></button>
+                <button id="btn-collapse-all" class="btn btn-sm btn-outline-secondary" title="Collapse all"><i class="fa-solid fa-minus"></i></button>
+              </div>
             </div>
-          </div>
 
-          <div id="json-tree" class="json-tree flex-grow-1 border rounded bg-white p-2 overflow-auto"></div>
-          <div class="mt-2 text-end muted-small">Click keys to expand/collapse.</div>
+            <div id="json-tree" class="json-body json-tree border rounded overflow-auto"></div>
+            <div class="mt-2 text-end muted-small">Click keys to expand/collapse.</div>
+          </div>
         </div>
       </div>
     </div>
@@ -260,6 +255,7 @@
       $('#items-list').empty();
       $('#form-title').val(''); $('#form-id').val(''); $('#form-type').val('text'); $('#form-created').val('');
       $('#form-tags').val(''); $('#form-payload-json').val('{}'); $('#delete-item').prop('disabled', true);
+      $('#selected-cat-name').text('Select a category'); $('#selected-cat-meta').text('');
     }
 
     function selectCategory(catId){
@@ -368,6 +364,7 @@
       renderItems(cat); renderCategories(); renderTree();
     }
 
+    // JSON tree
     function renderTree(){
       const $root = $('#json-tree').empty();
       buildJsonTree(catalog, $root);
@@ -431,7 +428,7 @@
     function downloadJSON(){ const blob = new Blob([JSON.stringify(catalog, null,2)], {type:'application/json'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'data.updated.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); }
     function slugify(s){ return (s||'').toString().toLowerCase().trim().replace(/[\s\_]+/g,'-').replace(/[^a-z0-9\-]/g,'').replace(/\-+/g,'-').replace(/^\-+|\-+$/g,''); }
 
-    // bindings
+    // bind
     $(function(){
       $('#add-category').on('click', addCategory);
       $('#add-item').on('click', addItem);
